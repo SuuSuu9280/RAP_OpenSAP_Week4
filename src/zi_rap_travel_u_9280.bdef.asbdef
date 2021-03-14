@@ -4,7 +4,7 @@ define behavior for ZI_RAP_TRAVEL_U_9280 alias Travel
 implementation in class zbp_i_rap_travel_u_9280 unique
 lock master
 //authorization master
-etag Lastchangedat
+//etag Lastchangedat
 {
   create;
   update;
