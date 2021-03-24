@@ -1,17 +1,16 @@
 unmanaged;
 
-define behavior for ZI_RAP_TRAVEL_U_9280 alias Travel
+define behavior for ZI_RAP_Travel_U_9280 alias Travel
 implementation in class zbp_i_rap_travel_u_9280 unique
 lock master
-//authorization master
-//etag Lastchangedat
+etag master Lastchangedat
 {
   create;
   update;
   delete;
   association _Booking { create; }
 
-  field ( read only ) TravelID;
+  field ( readonly ) TravelID;
   field ( mandatory ) AgencyID, CustomerID, BeginDate, EndDate;
 
   mapping for /DMO/TRAVEL control zsrap_travel_x_9280
@@ -31,24 +30,21 @@ lock master
     Lastchangedby = LASTCHANGEDBY;
     Lastchangedat = LASTCHANGEDAT;
   }
-
 }
 
-define behavior for ZI_RAP_BOOKING_U_9280 alias Booking
+define behavior for ZI_RAP_Booking_U_9280 alias Booking
 implementation in class zbp_i_rap_booking_u_9280 unique
-lock dependent( TravelID = TravelID )
-//authorization dependent( <local_field_name> = <target_field_name> )
-//etag
+lock dependent by _Travel
+etag dependent by _Travel
 {
   update;
   delete;
-
   association _Travel;
 
-  field ( read only ) TravelID, BookingID;
+  field ( readonly ) TravelID, BookingID;
   field ( mandatory ) BookingDate, CustomerID, CarrierId, ConnectionID, FlightDate;
 
-  mapping for /DMO/BOOKING control zsrap_booking_x_9280
+ mapping for /DMO/BOOKING control zsrap_booking_x_9280
   {
     TravelId = TRAVEL_ID;
     BookingId = BOOKING_ID;

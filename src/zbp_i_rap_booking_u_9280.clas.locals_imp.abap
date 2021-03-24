@@ -1,83 +1,26 @@
 CLASS lhc_Booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
   PRIVATE SECTION.
 
-    METHODS delete FOR MODIFY
-      IMPORTING keys FOR DELETE Booking.
-
     METHODS update FOR MODIFY
       IMPORTING entities FOR UPDATE Booking.
+
+    METHODS delete FOR MODIFY
+      IMPORTING keys FOR DELETE Booking.
 
     METHODS read FOR READ
       IMPORTING keys FOR READ Booking RESULT result.
 
-    METHODS rba_TRAVEL FOR READ
-      IMPORTING keys_rba FOR READ Booking\_TRAVEL FULL result_requested RESULT result LINK association_links.
+    METHODS rba_Travel FOR READ
+      IMPORTING keys_rba FOR READ Booking\_Travel FULL result_requested RESULT result LINK association_links.
 
 ENDCLASS.
 
 CLASS lhc_Booking IMPLEMENTATION.
 
-  METHOD delete.
-
-    "DATA messages TYPE /dmo/t_message.
-    DATA messages TYPE /dmo/if_flight_legacy=>tt_message.
-
-    LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
-
-      CALL FUNCTION '/DMO/FLIGHT_TRAVEL_UPDATE'
-        EXPORTING
-          "is_travel   = VALUE /dmo/s_travel_in( travel_id = <key>-travelid )
-          is_travel   = VALUE /dmo/if_flight_legacy=>ts_travel_in( travel_id = <key>-travelid )
-          "is_travelx  = VALUE /dmo/s_travel_inx( travel_id = <key>-travelid )
-          is_travelx  = VALUE /dmo/if_flight_legacy=>ts_travel_inx( travel_id = <key>-travelid )
-          "it_booking  = VALUE /dmo/t_booking_in( ( booking_id = <key>-bookingid ) )
-          it_booking  = VALUE /dmo/if_flight_legacy=>tt_booking_in( ( booking_id = <key>-bookingid ) )
-          "it_bookingx = VALUE /dmo/t_booking_inx( ( booking_id  = <key>-bookingid
-          it_bookingx = VALUE /dmo/if_flight_legacy=>tt_booking_inx( ( booking_id  = <key>-bookingid
-                                                    action_code = /dmo/if_flight_legacy=>action_code-delete ) )
-        IMPORTING
-          et_messages = messages.
-
-      IF messages IS INITIAL.
-
-        APPEND VALUE #( travelid = <key>-travelid
-                       bookingid = <key>-bookingid ) TO mapped-booking.
-
-      ELSE.
-
-        "fill failed return structure for the framework
-        APPEND VALUE #( travelid = <key>-travelid
-                        bookingid = <key>-bookingid ) TO failed-booking.
-
-        LOOP AT messages INTO DATA(message).
-          "fill reported structure to be displayed on the UI
-          APPEND VALUE #( travelid = <key>-travelid
-                          bookingid = <key>-bookingid
-                  %msg = new_message( id = message-msgid
-                                                number = message-msgno
-                                                v1 = message-msgv1
-                                                v2 = message-msgv2
-                                                v3 = message-msgv3
-                                                v4 = message-msgv4
-                                                severity = CONV #( message-msgty ) )
-         ) TO reported-booking.
-        ENDLOOP.
-
-
-
-      ENDIF.
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
   METHOD update.
-
-    "DATA messages TYPE /dmo/t_message.
-    DATA messages TYPE /dmo/if_flight_legacy=>tt_message.
+    DATA messages TYPE /dmo/t_message.
     DATA legacy_entity_in  TYPE /dmo/booking.
-    "DATA legacy_entity_x TYPE /dmo/s_booking_inx.
-    DATA legacy_entity_x TYPE /dmo/if_flight_legacy=>ts_booking_inx.
+    DATA legacy_entity_x TYPE /dmo/s_booking_inx.
 
 
     LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
@@ -85,20 +28,15 @@ CLASS lhc_Booking IMPLEMENTATION.
       legacy_entity_in = CORRESPONDING #( <entity> MAPPING FROM ENTITY ).
 
       legacy_entity_x-booking_id = <entity>-BookingID.
-      "legacy_entity_x-_intx      = CORRESPONDING zsrap_booking_x_9280( <entity> MAPPING FROM ENTITY ).
-      legacy_entity_x            = CORRESPONDING zsrap_booking_x_9280( <entity> MAPPING FROM ENTITY ).
+      legacy_entity_x-_intx      = CORRESPONDING zsrap_booking_x_9280( <entity> MAPPING FROM ENTITY ).
       legacy_entity_x-action_code = /dmo/if_flight_legacy=>action_code-update.
 
       CALL FUNCTION '/DMO/FLIGHT_TRAVEL_UPDATE'
         EXPORTING
-          "is_travel   = VALUE /dmo/s_travel_in( travel_id = <entity>-travelid )
-          "is_travelx  = VALUE /dmo/s_travel_inx( travel_id = <entity>-travelid )
-          "it_booking  = VALUE /dmo/t_booking_in( ( CORRESPONDING #( legacy_entity_in ) ) )
-          "it_bookingx = VALUE /dmo/t_booking_inx( ( legacy_entity_x ) )
-          is_travel   = VALUE /dmo/if_flight_legacy=>ts_travel_in( travel_id = <entity>-travelid )
-          is_travelx  = VALUE /dmo/if_flight_legacy=>ts_travel_inx( travel_id = <entity>-travelid )
-          it_booking  = VALUE /dmo/if_flight_legacy=>tt_booking_in( ( CORRESPONDING #( legacy_entity_in ) ) )
-          it_bookingx = VALUE /dmo/if_flight_legacy=>tt_booking_inx( ( legacy_entity_x ) )
+          is_travel   = VALUE /dmo/s_travel_in( travel_id = <entity>-travelid )
+          is_travelx  = VALUE /dmo/s_travel_inx( travel_id = <entity>-travelid )
+          it_booking  = VALUE /dmo/t_booking_in( ( CORRESPONDING #( legacy_entity_in ) ) )
+          it_bookingx = VALUE /dmo/t_booking_inx( ( legacy_entity_x ) )
         IMPORTING
           et_messages = messages.
 
@@ -133,16 +71,59 @@ CLASS lhc_Booking IMPLEMENTATION.
       ENDIF.
 
     ENDLOOP.
+  ENDMETHOD.
 
+  METHOD delete.
+    DATA messages TYPE /dmo/t_message.
+
+    LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
+
+      CALL FUNCTION '/DMO/FLIGHT_TRAVEL_UPDATE'
+        EXPORTING
+          is_travel   = VALUE /dmo/s_travel_in( travel_id = <key>-travelid )
+          is_travelx  = VALUE /dmo/s_travel_inx( travel_id = <key>-travelid )
+          it_booking  = VALUE /dmo/t_booking_in( ( booking_id = <key>-bookingid ) )
+          it_bookingx = VALUE /dmo/t_booking_inx( ( booking_id  = <key>-bookingid
+                                                    action_code = /dmo/if_flight_legacy=>action_code-delete ) )
+        IMPORTING
+          et_messages = messages.
+
+      IF messages IS INITIAL.
+
+        APPEND VALUE #( travelid = <key>-travelid
+                       bookingid = <key>-bookingid ) TO mapped-booking.
+
+      ELSE.
+
+        "fill failed return structure for the framework
+        APPEND VALUE #( travelid = <key>-travelid
+                        bookingid = <key>-bookingid ) TO failed-booking.
+
+        LOOP AT messages INTO DATA(message).
+          "fill reported structure to be displayed on the UI
+          APPEND VALUE #( travelid = <key>-travelid
+                          bookingid = <key>-bookingid
+                  %msg = new_message( id = message-msgid
+                                                number = message-msgno
+                                                v1 = message-msgv1
+                                                v2 = message-msgv2
+                                                v3 = message-msgv3
+                                                v4 = message-msgv4
+                                                severity = CONV #( message-msgty ) )
+         ) TO reported-booking.
+        ENDLOOP.
+
+
+
+      ENDIF.
+
+    ENDLOOP.
   ENDMETHOD.
 
   METHOD read.
-
     DATA: legacy_parent_entity_out TYPE /dmo/travel,
-          "legacy_entities_out      TYPE /dmo/t_booking,
-          "messages                 TYPE /dmo/t_message.
-          legacy_entities_out      TYPE /dmo/if_flight_legacy=>tt_booking,
-          messages                 TYPE /dmo/if_flight_legacy=>tt_message.
+          legacy_entities_out      TYPE /dmo/t_booking,
+          messages                 TYPE /dmo/t_message.
 
     "Only one function call for each requested travelid
     LOOP AT keys ASSIGNING FIELD-SYMBOL(<key_parent>)
@@ -192,17 +173,13 @@ CLASS lhc_Booking IMPLEMENTATION.
       ENDIF.
 
     ENDLOOP.
-
   ENDMETHOD.
 
-  METHOD rba_TRAVEL.
-
+  METHOD rba_Travel.
     DATA: ls_travel_out  TYPE /dmo/travel,
-          "lt_booking_out TYPE /dmo/t_booking,
-          lt_booking_out TYPE /dmo/if_flight_legacy=>tt_booking,
+          lt_booking_out TYPE /dmo/t_booking,
           ls_travel      LIKE LINE OF result,
-          "lt_message     TYPE /dmo/t_message.
-          lt_message     TYPE /dmo/if_flight_legacy=>tt_message.
+          lt_message     TYPE /dmo/t_message.
 
     "result  type table for read result /dmo/i_travel_u\\booking\_travel
 
@@ -242,7 +219,6 @@ CLASS lhc_Booking IMPLEMENTATION.
       ENDIF.
 
     ENDLOOP.
-
   ENDMETHOD.
 
 ENDCLASS.

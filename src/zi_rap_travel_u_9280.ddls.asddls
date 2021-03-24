@@ -1,13 +1,13 @@
-@AbapCatalog.sqlViewName: 'ZIRAPTRAVELU9280'
-@AbapCatalog.compiler.compareFilter: true
-@AbapCatalog.preserveKey: true
-@AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: 'Travel data'
-define root view ZI_RAP_TRAVEL_U_9280 as select from /dmo/travel
-composition [0..*] of ZI_RAP_BOOKING_U_9280  as _Booking
-association [0..1] to /DMO/I_Agency   as _Agency   on $projection.AgencyID = _Agency.AgencyID
-association [0..1] to /DMO/I_Customer as _Customer on $projection.CustomerID = _Customer.CustomerID
-association [0..1] to I_Currency      as _Currency on $projection.CurrencyCode = _Currency.Currency
+
+define root view entity ZI_RAP_Travel_U_9280
+  as select from /dmo/travel as Travel
+
+  composition [0..*] of ZI_RAP_Booking_U_9280 as _Booking
+  association [0..1] to /DMO/I_Agency         as _Agency   on $projection.AgencyID = _Agency.AgencyID
+  association [0..1] to /DMO/I_Customer       as _Customer on $projection.CustomerID = _Customer.CustomerID
+  association [0..1] to I_Currency            as _Currency on $projection.CurrencyCode = _Currency.Currency
+
 {
   key travel_id     as TravelID,
       agency_id     as AgencyID,

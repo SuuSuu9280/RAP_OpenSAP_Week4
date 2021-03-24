@@ -4,6 +4,7 @@
   <asx:values>
    <DEVC>
     <CTEXT>OpenSAP Week4</CTEXT>
+    <TPCLASS>X</TPCLASS>
    </DEVC>
   </asx:values>
  </asx:abap>

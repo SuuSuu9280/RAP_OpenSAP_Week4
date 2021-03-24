@@ -4,23 +4,23 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS create FOR MODIFY
       IMPORTING entities FOR CREATE Travel.
 
-    METHODS delete FOR MODIFY
-      IMPORTING keys FOR DELETE Travel.
-
     METHODS update FOR MODIFY
       IMPORTING entities FOR UPDATE Travel.
 
-    METHODS lock FOR LOCK
-      IMPORTING keys FOR LOCK Travel.
+    METHODS delete FOR MODIFY
+      IMPORTING keys FOR DELETE Travel.
 
     METHODS read FOR READ
       IMPORTING keys FOR READ Travel RESULT result.
 
-    METHODS cba_BOOKING FOR MODIFY
-      IMPORTING entities_cba FOR CREATE Travel\_BOOKING.
+    METHODS lock FOR LOCK
+      IMPORTING keys FOR LOCK Travel.
 
-    METHODS rba_BOOKING FOR READ
-      IMPORTING keys_rba FOR READ Travel\_BOOKING FULL result_requested RESULT result LINK association_links.
+    METHODS rba_Booking FOR READ
+      IMPORTING keys_rba FOR READ Travel\_Booking FULL result_requested RESULT result LINK association_links.
+
+    METHODS cba_Booking FOR MODIFY
+      IMPORTING entities_cba FOR CREATE Travel\_Booking.
 
 ENDCLASS.
 
@@ -28,8 +28,7 @@ CLASS lhc_Travel IMPLEMENTATION.
 
   METHOD create.
 
-    "DATA messages   TYPE /dmo/t_message.
-    DATA messages   TYPE /dmo/if_flight_legacy=>tt_message.
+    DATA messages   TYPE /dmo/t_message.
     DATA legacy_entity_in  TYPE /dmo/travel.
     DATA legacy_entity_out TYPE /dmo/travel.
     LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
@@ -38,8 +37,7 @@ CLASS lhc_Travel IMPLEMENTATION.
 
       CALL FUNCTION '/DMO/FLIGHT_TRAVEL_CREATE'
         EXPORTING
-          "is_travel   = CORRESPONDING /dmo/s_travel_in( legacy_entity_in )
-          is_travel   = CORRESPONDING /dmo/if_flight_legacy=>ts_travel_in( legacy_entity_in )
+          is_travel   = CORRESPONDING /dmo/s_travel_in( legacy_entity_in )
         IMPORTING
           es_travel   = legacy_entity_out
           et_messages = messages.
@@ -68,10 +66,54 @@ CLASS lhc_Travel IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD update.
+
+    DATA legacy_entity_in   TYPE /dmo/travel.
+    DATA legacy_entity_x  TYPE /dmo/s_travel_inx . "refers to x structure (> BAPIs)
+    DATA messages TYPE /dmo/t_message.
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
+
+      legacy_entity_in = CORRESPONDING #( <entity> MAPPING FROM ENTITY ).
+      legacy_entity_x-travel_id = <entity>-TravelID.
+      legacy_entity_x-_intx = CORRESPONDING zsrap_travel_x_9280( <entity> MAPPING FROM ENTITY ).
+
+      CALL FUNCTION '/DMO/FLIGHT_TRAVEL_UPDATE'
+        EXPORTING
+          is_travel   = CORRESPONDING /dmo/s_travel_in( legacy_entity_in )
+          is_travelx  = legacy_entity_x
+        IMPORTING
+          et_messages = messages.
+
+      IF messages IS INITIAL.
+
+        APPEND VALUE #( travelid = legacy_entity_in-travel_id ) TO mapped-travel.
+
+      ELSE.
+
+        "fill failed return structure for the framework
+        APPEND VALUE #( travelid = legacy_entity_in-travel_id ) TO failed-travel.
+        "fill reported structure to be displayed on the UI
+        APPEND VALUE #( travelid = legacy_entity_in-travel_id
+                        %msg = new_message( id = messages[ 1 ]-msgid
+                                            number = messages[ 1 ]-msgno
+                                            v1 = messages[ 1 ]-msgv1
+                                            v2 = messages[ 1 ]-msgv2
+                                            v3 = messages[ 1 ]-msgv3
+                                            v4 = messages[ 1 ]-msgv4
+                                            severity = CONV #( messages[ 1 ]-msgty ) )
+       ) TO reported-travel.
+
+      ENDIF.
+
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
   METHOD delete.
 
-    "DATA messages TYPE /dmo/t_message.
-    DATA messages   TYPE /dmo/if_flight_legacy=>tt_message.
+    DATA messages TYPE /dmo/t_message.
 
     LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
 
@@ -106,91 +148,10 @@ CLASS lhc_Travel IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD update.
-
-    DATA legacy_entity_in   TYPE /dmo/travel.
-    "DATA legacy_entity_x  TYPE /dmo/s_travel_inx . "refers to x structure (> BAPIs)
-    DATA legacy_entity_x  TYPE /dmo/if_flight_legacy=>ts_travel_inx . "refers to x structure (> BAPIs)
-    "DATA messages TYPE /dmo/t_message.
-    DATA messages TYPE /dmo/if_flight_legacy=>tt_message.
-
-    LOOP AT entities ASSIGNING FIELD-SYMBOL(<entity>).
-
-      legacy_entity_in = CORRESPONDING #( <entity> MAPPING FROM ENTITY ).
-      legacy_entity_x-travel_id = <entity>-TravelID.
-      "legacy_entity_x-_intx = CORRESPONDING zsrap_travel_x_9280( <entity> MAPPING FROM ENTITY ).
-      legacy_entity_x = CORRESPONDING zsrap_travel_x_9280( <entity> MAPPING FROM ENTITY ).
-
-      CALL FUNCTION '/DMO/FLIGHT_TRAVEL_UPDATE'
-        EXPORTING
-          "is_travel   = CORRESPONDING /dmo/s_travel_in( legacy_entity_in )
-          is_travel   = CORRESPONDING /dmo/if_flight_legacy=>ts_travel_in( legacy_entity_in )
-          is_travelx  = legacy_entity_x
-        IMPORTING
-          et_messages = messages.
-
-      IF messages IS INITIAL.
-
-        APPEND VALUE #( travelid = legacy_entity_in-travel_id ) TO mapped-travel.
-
-      ELSE.
-
-        "fill failed return structure for the framework
-        APPEND VALUE #( travelid = legacy_entity_in-travel_id ) TO failed-travel.
-        "fill reported structure to be displayed on the UI
-        APPEND VALUE #( travelid = legacy_entity_in-travel_id
-                        %msg = new_message( id = messages[ 1 ]-msgid
-                                            number = messages[ 1 ]-msgno
-                                            v1 = messages[ 1 ]-msgv1
-                                            v2 = messages[ 1 ]-msgv2
-                                            v3 = messages[ 1 ]-msgv3
-                                            v4 = messages[ 1 ]-msgv4
-                                            severity = CONV #( messages[ 1 ]-msgty ) )
-       ) TO reported-travel.
-
-      ENDIF.
-
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-  METHOD lock.
-
-  "Instantiate lock object
-    DATA(lock) = cl_abap_lock_object_factory=>get_instance( iv_name = '/DMO/ETRAVEL' ).
-
-
-    LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
-      TRY.
-          "enqueue travel instance
-          lock->enqueue(
-              it_parameter  = VALUE #( (  name = 'TRAVEL_ID' value = REF #( <key>-travelid ) ) )
-          ).
-          "if foreign lock exists
-        CATCH cx_abap_foreign_lock INTO DATA(lx_foreign_lock).
-
-          "fill failed return structure for the framework
-          APPEND VALUE #( travelid = <key>-travelid ) TO failed-travel.
-          "fill reported structure to be displayed on the UI
-          APPEND VALUE #( travelid = <key>-travelid
-                          %msg = new_message( id = '/DMO/CM_FLIGHT_LEGAC'
-                                              number = '032'
-                                              v1 = <key>-travelid
-                                              v2 = lx_foreign_lock->user_name
-                                              severity = CONV #( 'E' ) )
-         ) TO reported-travel.
-
-      ENDTRY.
-    ENDLOOP.
-
-  ENDMETHOD.
-
   METHOD read.
 
     DATA: legacy_entity_out TYPE /dmo/travel,
-          "messages          TYPE /dmo/t_message.
-          messages          TYPE /dmo/if_flight_legacy=>tt_message.
+          messages          TYPE /dmo/t_message.
 
     LOOP AT keys INTO DATA(key) GROUP BY key-TravelId.
 
@@ -230,14 +191,107 @@ CLASS lhc_Travel IMPLEMENTATION.
 
     ENDLOOP.
 
+
   ENDMETHOD.
 
-  METHOD cba_BOOKING.
+  METHOD lock.
 
-    "DATA messages        TYPE /dmo/t_message.
-    DATA messages        TYPE /dmo/if_flight_legacy=>tt_message.
-    "DATA lt_booking_old     TYPE /dmo/t_booking.
-    DATA lt_booking_old     TYPE /dmo/if_flight_legacy=>tt_booking.
+
+  "Instantiate lock object
+    DATA(lock) = cl_abap_lock_object_factory=>get_instance( iv_name = '/DMO/ETRAVEL' ).
+
+
+    LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
+      TRY.
+          "enqueue travel instance
+          lock->enqueue(
+              it_parameter  = VALUE #( (  name = 'TRAVEL_ID' value = REF #( <key>-travelid ) ) )
+          ).
+          "if foreign lock exists
+        CATCH cx_abap_foreign_lock INTO DATA(lx_foreign_lock).
+
+          "fill failed return structure for the framework
+          APPEND VALUE #( travelid = <key>-travelid ) TO failed-travel.
+          "fill reported structure to be displayed on the UI
+          APPEND VALUE #( travelid = <key>-travelid
+                          %msg = new_message( id = '/DMO/CM_FLIGHT_LEGAC'
+                                              number = '032'
+                                              v1 = <key>-travelid
+                                              v2 = lx_foreign_lock->user_name
+                                              severity = CONV #( 'E' ) )
+         ) TO reported-travel.
+
+      ENDTRY.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD rba_Booking.
+    DATA: legacy_parent_entity_out  TYPE /dmo/travel,
+          legacy_entities_out TYPE /dmo/t_booking,
+          entity     LIKE LINE OF result,
+          message     TYPE /dmo/t_message.
+
+
+    LOOP AT keys_rba  ASSIGNING FIELD-SYMBOL(<key_rba>) GROUP  BY <key_rba>-TravelId.
+
+      CALL FUNCTION '/DMO/FLIGHT_TRAVEL_READ'
+        EXPORTING
+          iv_travel_id = <key_rba>-travelid
+        IMPORTING
+          es_travel    = legacy_parent_entity_out
+          et_booking   = legacy_entities_out
+          et_messages  = message.
+
+      IF message IS INITIAL.
+
+        LOOP AT legacy_entities_out ASSIGNING FIELD-SYMBOL(<fs_booking>).
+          "fill link table with key fields
+
+          INSERT
+            VALUE #(
+                source-%key = <key_rba>-%key
+                target-%key = VALUE #(
+                  TravelID  = <fs_booking>-travel_id
+                  BookingID = <fs_booking>-booking_id
+              )
+            )
+            INTO TABLE  association_links .
+
+          "fill result parameter with flagged fields
+          IF result_requested = abap_true.
+
+            entity = CORRESPONDING #( <fs_booking> MAPPING TO ENTITY ).
+            INSERT entity INTO TABLE result.
+
+          ENDIF.
+
+        ENDLOOP.
+
+      ELSE.
+        "fill failed table in case of error
+
+        failed-travel = VALUE #(
+          BASE failed-travel
+          FOR msg IN message (
+            %key = <key_rba>-TravelID
+            %fail-cause = COND #(
+              WHEN msg-msgty = 'E' AND  ( msg-msgno = '016' OR msg-msgno = '009' )
+              THEN if_abap_behv=>cause-not_found
+              ELSE if_abap_behv=>cause-unspecific
+            )
+          )
+        ).
+
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD cba_Booking.
+    DATA messages        TYPE /dmo/t_message.
+    DATA lt_booking_old     TYPE /dmo/t_booking.
     DATA entity         TYPE /dmo/booking.
     DATA last_booking_id TYPE /dmo/booking_id VALUE '0'.
 
@@ -269,14 +323,10 @@ CLASS lhc_Travel IMPLEMENTATION.
 
           CALL FUNCTION '/DMO/FLIGHT_TRAVEL_UPDATE'
             EXPORTING
-              "is_travel   = VALUE /dmo/s_travel_in( travel_id = travelid )
-              is_travel   = VALUE /dmo/if_flight_legacy=>ts_travel_in( travel_id = travelid )
-              "is_travelx  = VALUE /dmo/s_travel_inx( travel_id = travelid )
-              is_travelx  = VALUE /dmo/if_flight_legacy=>ts_travel_inx( travel_id = travelid )
-              "it_booking  = VALUE /dmo/t_booking_in( ( CORRESPONDING #( entity ) ) )
-              it_booking  = VALUE /dmo/if_flight_legacy=>tt_booking_in( ( CORRESPONDING #( entity ) ) )
-              "it_bookingx = VALUE /dmo/t_booking_inx(
-              it_bookingx = VALUE /dmo/if_flight_legacy=>tt_booking_inx(
+              is_travel   = VALUE /dmo/s_travel_in( travel_id = travelid )
+              is_travelx  = VALUE /dmo/s_travel_inx( travel_id = travelid )
+              it_booking  = VALUE /dmo/t_booking_in( ( CORRESPONDING #( entity ) ) )
+              it_bookingx = VALUE /dmo/t_booking_inx(
                 (
                   booking_id  = entity-booking_id
                   action_code = /dmo/if_flight_legacy=>action_code-create
@@ -347,95 +397,39 @@ CLASS lhc_Travel IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD rba_BOOKING.
-
-    DATA: legacy_parent_entity_out  TYPE /dmo/travel,
-          "legacy_entities_out TYPE /dmo/t_booking,
-          legacy_entities_out TYPE /dmo/if_flight_legacy=>tt_booking,
-          entity     LIKE LINE OF result,
-          "message     TYPE /dmo/t_message.
-          message     TYPE /dmo/if_flight_legacy=>tt_message.
-
-
-    LOOP AT keys_rba  ASSIGNING FIELD-SYMBOL(<key_rba>) GROUP  BY <key_rba>-TravelId.
-
-      CALL FUNCTION '/DMO/FLIGHT_TRAVEL_READ'
-        EXPORTING
-          iv_travel_id = <key_rba>-travelid
-        IMPORTING
-          es_travel    = legacy_parent_entity_out
-          et_booking   = legacy_entities_out
-          et_messages  = message.
-
-      IF message IS INITIAL.
-
-        LOOP AT legacy_entities_out ASSIGNING FIELD-SYMBOL(<fs_booking>).
-          "fill link table with key fields
-
-          INSERT
-            VALUE #(
-                source-%key = <key_rba>-%key
-                target-%key = VALUE #(
-                  TravelID  = <fs_booking>-travel_id
-                  BookingID = <fs_booking>-booking_id
-              )
-            )
-            INTO TABLE  association_links .
-
-          "fill result parameter with flagged fields
-          IF result_requested = abap_true.
-
-            entity = CORRESPONDING #( <fs_booking> MAPPING TO ENTITY ).
-            INSERT entity INTO TABLE result.
-
-          ENDIF.
-
-        ENDLOOP.
-
-      ELSE.
-        "fill failed table in case of error
-
-        failed-travel = VALUE #(
-          BASE failed-travel
-          FOR msg IN message (
-            %key = <key_rba>-TravelID
-            %fail-cause = COND #(
-              WHEN msg-msgty = 'E' AND  ( msg-msgno = '016' OR msg-msgno = '009' )
-              THEN if_abap_behv=>cause-not_found
-              ELSE if_abap_behv=>cause-unspecific
-            )
-          )
-        ).
-
-      ENDIF.
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
 ENDCLASS.
 
 CLASS lsc_ZI_RAP_TRAVEL_U_9280 DEFINITION INHERITING FROM cl_abap_behavior_saver.
   PROTECTED SECTION.
 
+    METHODS finalize REDEFINITION.
+
     METHODS check_before_save REDEFINITION.
 
-    METHODS finalize          REDEFINITION.
+    METHODS save REDEFINITION.
 
-    METHODS save              REDEFINITION.
+    METHODS cleanup REDEFINITION.
+
+    METHODS cleanup_finalize REDEFINITION.
 
 ENDCLASS.
 
 CLASS lsc_ZI_RAP_TRAVEL_U_9280 IMPLEMENTATION.
 
-  METHOD check_before_save.
-  ENDMETHOD.
-
   METHOD finalize.
   ENDMETHOD.
 
+  METHOD check_before_save.
+  ENDMETHOD.
+
   METHOD save.
-   CALL FUNCTION '/DMO/FLIGHT_TRAVEL_SAVE'.
+    CALL FUNCTION '/DMO/FLIGHT_TRAVEL_SAVE'.
+  ENDMETHOD.
+
+  METHOD cleanup.
+  ENDMETHOD.
+
+  METHOD cleanup_finalize.
   ENDMETHOD.
 
 ENDCLASS.

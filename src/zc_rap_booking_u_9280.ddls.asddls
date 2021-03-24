@@ -1,49 +1,49 @@
-    @EndUserText.label: 'Booking'
-    @AccessControl.authorizationCheck: #CHECK
-    @Search.searchable: true
+@EndUserText.label: 'Booking'
+@AccessControl.authorizationCheck: #CHECK
+@Search.searchable: true
 
 
-    @Metadata.allowExtensions: true
+@Metadata.allowExtensions: true
 define view entity ZC_RAP_Booking_U_9280
-      as projection on ZI_RAP_BOOKING_U_9280
-    {
-          //ZI_RAP_BOOKING_U_9280
-          @Search.defaultSearchElement: true
-      key TravelID,
-          @Search.defaultSearchElement: true
-      key BookingID,
-          BookingDate,
-          @Consumption.valueHelpDefinition: [ { entity: { name:     '/DMO/I_Customer',
-                                                       element:     'CustomerID' } } ]
-          CustomerID,
-          @Consumption.valueHelpDefinition: [ { entity: { name:     '/DMO/I_Carrier',
-                                                       element:     'AirlineID' } } ]
-          CarrierID,
-          @Consumption.valueHelpDefinition: [ { entity: { name:    '/DMO/I_Flight',
-                                                          element: 'ConnectionID' },
-                                                additionalBinding: [ { localElement: 'FlightDate',
-                                                                       element:      'FlightDate',
-                                                                       usage: #RESULT },
-                                                                     { localElement: 'CarrierID',
-                                                                            element: 'AirlineID',
-                                                                              usage: #RESULT },
-                                                                     { localElement: 'FlightPrice',
-                                                                            element: 'Price',
-                                                                              usage: #RESULT },
-                                                                     { localElement: 'CurrencyCode',
-                                                                            element: 'CurrencyCode',
-                                                                              usage: #RESULT } ]
-                                                } ]
-          ConnectionID,
-          FlightDate,
-          FlightPrice,
+  as projection on ZI_RAP_Booking_U_9280
+{
+      //ZI_RAP_BOOKING_U_9280
+      @Search.defaultSearchElement: true
+  key TravelID,
+      @Search.defaultSearchElement: true
+  key BookingID,
+      BookingDate,
+      @Consumption.valueHelpDefinition: [ { entity: { name:     '/DMO/I_Customer',
+                                                   element:     'CustomerID' } } ]
+      CustomerID,
+      @Consumption.valueHelpDefinition: [ { entity: { name:     '/DMO/I_Carrier',
+                                                   element:     'AirlineID' } } ]
+      CarrierID,
+      @Consumption.valueHelpDefinition: [ { entity: { name:    '/DMO/I_Flight',
+                                                      element: 'ConnectionID' },
+                                            additionalBinding: [ { localElement: 'FlightDate',
+                                                                   element:      'FlightDate',
+                                                                   usage: #RESULT },
+                                                                 { localElement: 'CarrierID',
+                                                                        element: 'AirlineID',
+                                                                          usage: #RESULT },
+                                                                 { localElement: 'FlightPrice',
+                                                                        element: 'Price',
+                                                                          usage: #RESULT },
+                                                                 { localElement: 'CurrencyCode',
+                                                                        element: 'CurrencyCode',
+                                                                          usage: #RESULT } ]
+                                            } ]
+      ConnectionID,
+      FlightDate,
+      FlightPrice,
 
-          @Consumption.valueHelpDefinition: [ {entity: { name:    'I_Currency',
-                                                         element: 'Currency' } } ]
-          CurrencyCode,
+      @Consumption.valueHelpDefinition: [ {entity: { name:    'I_Currency',
+                                                     element: 'Currency' } } ]
+      CurrencyCode,
 
-          /* Associations */
-          _Carrier,
-          _Customer,
-          _Travel : redirected to parent ZC_RAP_Travel_U_9280
-    }
+      /* Associations */
+      _Carrier,
+      _Customer,
+      _Travel : redirected to parent ZC_RAP_Travel_U_9280
+}

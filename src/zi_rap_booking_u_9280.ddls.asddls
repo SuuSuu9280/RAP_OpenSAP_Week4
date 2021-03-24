@@ -1,11 +1,11 @@
-@AbapCatalog.sqlViewName: 'ZIRAPBOOKU9280'
-@AbapCatalog.compiler.compareFilter: true
-@AbapCatalog.preserveKey: true
-@AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: 'Booking data'
 @Metadata.ignorePropagatedAnnotations: true
-define view ZI_RAP_BOOKING_U_9280 as select from /dmo/booking
-  association        to parent ZI_RAP_TRAVEL_U_9280 as _Travel     on  $projection.TravelID = _Travel.TravelID
+
+define view entity ZI_RAP_Booking_U_9280
+  as select from /dmo/booking
+
+
+  association        to parent ZI_RAP_Travel_U_9280 as _Travel     on  $projection.TravelID = _Travel.TravelID
   association [1..1] to /DMO/I_Carrier    as _Carrier    on  $projection.CarrierID = _Carrier.AirlineID
   association [1..1] to /DMO/I_Customer   as _Customer   on  $projection.CustomerID = _Customer.CustomerID
   association [1..1] to /DMO/I_Connection as _Connection on  $projection.CarrierID    = _Connection.AirlineID
@@ -13,6 +13,7 @@ define view ZI_RAP_BOOKING_U_9280 as select from /dmo/booking
   association [1..1] to /DMO/I_Flight     as _Flight     on  $projection.CarrierID    = _Flight.AirlineID
                                                          and $projection.ConnectionID = _Flight.ConnectionID
                                                          and $projection.FlightDate   = _Flight.FlightDate
+
 {
   key travel_id     as TravelID,
   key booking_id    as BookingID,
